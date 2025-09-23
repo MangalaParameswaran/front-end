@@ -26,9 +26,10 @@ const LoginPage = ({ setIsAuthenticated }: any) => {
     }
 
     return (
-        <div className='d-flex justify-content-center align-items-center vh-100' style={{ backgroundColor: "#f5f5f5" }}>
+        <div className='d-flex justify-content-center align-items-center vh-100' style={{  background: 'linear-gradient(135deg, #6fb1fc, #4364f7)', }}>
             <div className="card p-4 shadow-lg" style={{ maxWidth: '400px', width: '100%' }}>
-                <h2 className='text-center mb-4'>🌦️ Weather App Login</h2>
+                <h2 className='text-center mb-4'>Login</h2>
+                <hr/>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-3">
                         <label htmlFor="email" className='form-label fw-semibold'>Email</label>
@@ -67,10 +68,10 @@ const LoginPage = ({ setIsAuthenticated }: any) => {
                             {showPassword ? <FaEyeSlash /> : <FaEye />}
                         </span>
                     </div>
-                    <button className="btn btn-primary w-100 mb-3" type="submit">Login</button>
+                    <button className="btn btn-primary w-100 my-3" type="submit">Login</button>
                 </form>
 
-                <p className="text-center">
+                <p className="text-center mt-2">
                     Don’t have an account? <Link to="/register">Register</Link>
                 </p>
             </div>
