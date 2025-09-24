@@ -1,12 +1,10 @@
 import { api } from "./interceptor";
-import { deleteWeather } from "../interfaces/weather";
+import { deleteWeather, createWeather } from "../interfaces/weather";
 
 // Get weather
 export const getweather = async (country: string) => {
   try {
     const res = await api.get(`/country/${country}`);
-    console.log('res-data-----', res.data);
-    
     return res.data;
   } catch (err) {
     console.error(err);
@@ -15,7 +13,7 @@ export const getweather = async (country: string) => {
 };
 
 // Save weather
-export const saveWeather = async (data: any) => {
+export const saveWeather = async (data: createWeather) => {
   try {
     const res = await api.post(`/country/save/user/countries`, { ...data });
     return res.data;

@@ -2,19 +2,12 @@ import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { getAuth } from "../utils/storage";
 import { getweather, saveWeather, getSavedWeather, deleteSavedWeather, } from "../api/weather";
-import { message, Spin } from "antd";
+import { Spin } from "antd";
 import { FaStar } from "react-icons/fa";
+import { toast } from 'react-toastify';
+import { createWeather, getUserWeather, deleteWeather } from '../interfaces/weather'
 
-interface WeatherItem {
-  id: string;
-  name: string;
-  lat: number;
-  lng: number;
-  time: string;
-  isSaved: boolean;
-}
-
-const WeatherPage = ({setIsAuthenticated}: any) => {
+const WeatherPage = ({ setIsAuthenticated }: any) => {
   const { userId } = getAuth();
   const [country, setCountry] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,13 +18,12 @@ const WeatherPage = ({setIsAuthenticated}: any) => {
       setLoading(true);
       if (!userId) return;
       const res = await getSavedWeather(userId);
-      const savedItems = res.data.map((w: any) => ({ ...w, isSaved: true }));
+      const savedItems = res.data.map((w: getUserWeather) => ({ ...w, isSaved: true }));
       console.log('------d', savedItems);
 
       setWeatherData(savedItems);
     } catch (err) {
       console.error(err);
-      // message.error("Failed to load saved weather.");
     } finally {
       setLoading(false);
     }
@@ -42,43 +34,44 @@ const WeatherPage = ({setIsAuthenticated}: any) => {
     try {
       setLoading(true);
       if (!country) return;
-      const res = await getweather(country);
-      // Prevent duplicate items
-      const newItem = {
-        idWeather: res.cca3,
-        name: res.name.common,
-        temperature: res.temperature,
-        windSpeed: res.windspeed,
-        time: res.time,
-        flags: res.flags,
-        capital: res.capital?.[0] || "",
-        region: res.region,
-        latitude: res.latlng?.[0] || "",
-        longitude: res.latlng?.[1] || "",
-        population: res.population,
-        isSaved: false
-      };
-
-      const exists = weatherData.find((w) => w.id === newItem.idWeather);
-      if (!exists) {
+      const exists = weatherData.find((w) => (w.name).toLowerCase() === (country).toLowerCase());
+      if (exists) {
+        return toast.error(`Weather for country ${exists.name} already exist`);
+      } else {
+        const res = await getweather(country);
+        console.log('exist------', !!exists, exists);
+        // Prevent duplicate items
+        const newItem = {
+          idWeather: res.cca3,
+          name: res.name.common,
+          temperature: res.temperature,
+          windSpeed: res.windspeed,
+          time: res.time,
+          flags: res.flags,
+          capital: res.capital?.[0] || "",
+          latitude: res.latlng?.[0] || "",
+          longitude: res.latlng?.[1] || "",
+          population: res.population,
+          isSaved: false
+        };
         setWeatherData((prev) => [...prev, newItem]);
       }
 
       setCountry("");
     } catch (err) {
       console.error(err);
-      message.error("Country not found.");
+      toast.error("Country not found.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Toggle save / remove
+  // save / remove
   const toggleSave = async (weather: any) => {
     try {
       setLoading(true);
       if (!userId) {
-        message.error("User ID not exist");
+        toast.error("User ID not exist");
         return;
       }
       const plan_price = Number(sessionStorage.getItem('plan_price'));
@@ -87,10 +80,11 @@ const WeatherPage = ({setIsAuthenticated}: any) => {
       console.log('prixe------', plan_price, savedCount, weather.isSaved, plan_price === 2 && savedCount >= 2 && !weather.isSaved, savedCount >= 2);
 
       if (plan_price === 2 && savedCount >= 2 && !weather.isSaved) {
-        return message.error("Save up to 2 weather items for the monthly subscription");
+        return toast.error("Save up to 2 weather items for the monthly subscription");
       }
       if (weather.isSaved) {
-        const result = await deleteSavedWeather({ userId, countryId: weather.id });
+        const data: deleteWeather = { userId, countryId: weather.id };
+        const result = await deleteSavedWeather(data);
         // let weatherDataUpdated = weatherData.
         if (result.success) {
           setWeatherData((prev) =>
@@ -102,12 +96,14 @@ const WeatherPage = ({setIsAuthenticated}: any) => {
           // fetchSaved();
         }
       } else {
-        let data = {
+        let data: createWeather = {
           userId: userId,
           name: weather.name,
           latitude: weather.latitude,
           longitude: weather.longitude,
-          flags: weather.flags
+          flags: weather.flags,
+          capital: weather.capital,
+          population: Number(weather.population)
         }
         console.log('data---', data);
 
@@ -123,7 +119,7 @@ const WeatherPage = ({setIsAuthenticated}: any) => {
       }
     } catch (err) {
       console.error(err);
-      message.error("Failed to update saved weather.");
+      toast.error("Failed to update saved weather.");
     } finally {
       setLoading(false);
     }
@@ -135,7 +131,7 @@ const WeatherPage = ({setIsAuthenticated}: any) => {
 
   return (
     <div>
-      <Navbar  setIsAuthenticated = {setIsAuthenticated}/>
+      <Navbar setIsAuthenticated={setIsAuthenticated} />
       <div className="container mt-4">
         {/* Search */}
         <div className="input-group mb-3">
@@ -144,9 +140,10 @@ const WeatherPage = ({setIsAuthenticated}: any) => {
             className="form-control"
             placeholder="Search by country..."
             value={country}
+            disabled={loading} 
             onChange={(e) => setCountry(e.target.value)}
           />
-          <button className="btn btn-primary" onClick={handleSearch}>
+          <button className="btn btn-primary" style={{cursor:"pointer"}} onClick={handleSearch} disabled={loading || !country} >
             Search
           </button>
         </div>
@@ -154,28 +151,27 @@ const WeatherPage = ({setIsAuthenticated}: any) => {
         {/* Weather cards */}
         {
           loading ? (
-            <div style={{ textAlign: "center", marginTop: "20px" }}>
+            <div style={{ textAlign: "center", marginTop: "10em" , zIndex: -1}}>
               <Spin size="large" tip="Loading weather data..." />
             </div>
           ) : (
-            <div className="row" >
+            <div className="row mt-4" >
               {weatherData.map((w) => (
                 <div className="col-md-4 mb-3" key={w.idWeather}>
-                  <div className="card text-center shadow-sm shadow-lg weather-card" style={{ display: "flex", alignItems: 'center', cursor: "pointer", height:"auto" }}>
-                    <img src={w.flags.png} className="card-img-top" alt={`${w.flags.alt} flag`} style={{ width: "20vw", height: "40vh", padding: "1em 0" }} />
+                  <div className="card text-center shadow-sm shadow-lg weather-card" style={{ display: "flex", alignItems: 'center', cursor: "pointer", height: "auto" }}>
+                    <img src={w.flags.png} className="card-img-top" alt={`${w.flags.alt} flag`} style={{ width: "20vw", height: "30vh", padding: "1em 0", borderRadius: "1.3em"  }} />
                     <div className="card-header">
                       <h5 className="card-title">
                         {w.name} <FaStar size={25} color={w.isSaved ? "gold" : "gray"} style={{ cursor: "pointer", margin: "0em 0em 5px 0em" }} onClick={() => toggleSave(w)} />
                       </h5>
                     </div>
                     <div className="card-body">
-                      <p>🌡 Temp: {w.temperature}°C</p>
-                      <p>💨 Wind: {w.windSpeed} km/h</p>
-                      <p>⏰ Time: {w.time}</p>
-                      <p>🏙 Capital: {w.capital}</p>
-                      <p>🌍 Region: {w.region}</p>
-                      <p>👨‍👩‍👧‍👦 Population: {w.population}</p>
-                      <p>📍 Lat: {w.latitude}, Lng: {w.longitude}</p>
+                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>🌡 Temp:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {w.temperature}°C</p>
+                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>💨 Wind: </span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{w.windSpeed} km/h</p>
+                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>⏰ Time:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {w.time}</p>
+                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>🏙 Capital: </span> &nbsp; &nbsp; &nbsp; &nbsp;{w.capital}</p>
+                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>👨‍👩‍👧‍👦 Population:</span> &nbsp; {w.population}</p>
+                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>📍 Lat:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  {w.latitude}, Lng: {w.longitude}</p>
                     </div>
                   </div>
                 </div>
