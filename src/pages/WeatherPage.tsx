@@ -12,6 +12,7 @@ const WeatherPage = ({ setIsAuthenticated }: any) => {
   const [country, setCountry] = useState("");
   const [loading, setLoading] = useState(false);
   const [weatherData, setWeatherData] = useState<any[]>([]);
+  const subscribed = sessionStorage.getItem('subscribed') ? sessionStorage.getItem('subscribed') === 'true' : false;
 
   const fetchSaved = async () => {
     try {
@@ -19,8 +20,6 @@ const WeatherPage = ({ setIsAuthenticated }: any) => {
       if (!userId) return;
       const res = await getSavedWeather(userId);
       const savedItems = res.data.map((w: getUserWeather) => ({ ...w, isSaved: true }));
-      console.log('------d', savedItems);
-
       setWeatherData(savedItems);
     } catch (err) {
       console.error(err);
@@ -39,8 +38,6 @@ const WeatherPage = ({ setIsAuthenticated }: any) => {
         return toast.error(`Weather for country ${exists.name} already exist`);
       } else {
         const res = await getweather(country);
-        console.log('exist------', !!exists, exists);
-        // Prevent duplicate items
         const newItem = {
           idWeather: res.cca3,
           name: res.name.common,
@@ -77,23 +74,18 @@ const WeatherPage = ({ setIsAuthenticated }: any) => {
       const plan_price = Number(sessionStorage.getItem('plan_price'));
       const savedCount = await weatherData.filter((w) => w.isSaved).length;
 
-      console.log('prixe------', plan_price, savedCount, weather.isSaved, plan_price === 2 && savedCount >= 2 && !weather.isSaved, savedCount >= 2);
-
       if (plan_price === 2 && savedCount >= 2 && !weather.isSaved) {
-        return toast.error("Save up to 2 weather items for the monthly subscription");
+        return toast.error("Monthly subscription allows up to 2 weather saves only.");
       }
       if (weather.isSaved) {
         const data: deleteWeather = { userId, countryId: weather.id };
         const result = await deleteSavedWeather(data);
-        // let weatherDataUpdated = weatherData.
         if (result.success) {
           setWeatherData((prev) =>
             prev.map((w) => {
               return w.name == weather.name ? { ...w, isSaved: false } : w;
             })
           )
-          console.log('resul--del', weatherData);
-          // fetchSaved();
         }
       } else {
         let data: createWeather = {
@@ -103,12 +95,10 @@ const WeatherPage = ({ setIsAuthenticated }: any) => {
           longitude: weather.longitude,
           flags: weather.flags,
           capital: weather.capital,
-          population: Number(weather.population)
+          population: Number(weather.population),
+          windSpeed: Number(weather.windSpeed)
         }
-        console.log('data---', data);
-
         const res = await saveWeather(data);
-        console.log('res-------save', res);
         if (res.success) {
           setWeatherData((prev) =>
             prev.map((w) =>
@@ -131,19 +121,18 @@ const WeatherPage = ({ setIsAuthenticated }: any) => {
 
   return (
     <div>
-      <Navbar setIsAuthenticated={setIsAuthenticated} />
+      <Navbar setIsAuthenticated={setIsAuthenticated}  />
       <div className="container mt-4">
-        {/* Search */}
         <div className="input-group mb-3">
           <input
             type="text"
             className="form-control"
             placeholder="Search by country..."
             value={country}
-            disabled={loading} 
+            disabled={loading}
             onChange={(e) => setCountry(e.target.value)}
           />
-          <button className="btn btn-primary" style={{cursor:"pointer"}} onClick={handleSearch} disabled={loading || !country} >
+          <button className="btn btn-primary" style={{ cursor: "pointer" }} onClick={handleSearch} disabled={loading || !country} >
             Search
           </button>
         </div>
@@ -151,7 +140,7 @@ const WeatherPage = ({ setIsAuthenticated }: any) => {
         {/* Weather cards */}
         {
           loading ? (
-            <div style={{ textAlign: "center", marginTop: "10em" , zIndex: -1}}>
+            <div style={{ textAlign: "center", marginTop: "10em", zIndex: -1 }}>
               <Spin size="large" tip="Loading weather data..." />
             </div>
           ) : (
@@ -159,19 +148,22 @@ const WeatherPage = ({ setIsAuthenticated }: any) => {
               {weatherData.map((w) => (
                 <div className="col-md-4 mb-3" key={w.idWeather}>
                   <div className="card text-center shadow-sm shadow-lg weather-card" style={{ display: "flex", alignItems: 'center', cursor: "pointer", height: "auto" }}>
-                    <img src={w.flags.png} className="card-img-top" alt={`${w.flags.alt} flag`} style={{ width: "20vw", height: "30vh", padding: "1em 0", borderRadius: "1.3em"  }} />
+                    <img src={w.flags.png} className="card-img-top" alt={`${w.flags.alt} flag`} style={{ width: "20vw", height: "30vh", padding: "1em 0", borderRadius: "1.3em" }} />
                     <div className="card-header">
                       <h5 className="card-title">
-                        {w.name} <FaStar size={25} color={w.isSaved ? "gold" : "gray"} style={{ cursor: "pointer", margin: "0em 0em 5px 0em" }} onClick={() => toggleSave(w)} />
+                        {w.name} 
+                        {(subscribed && subscribed == true) && (
+                          <FaStar size={25} color={w.isSaved ? "gold" : "gray"} style={{ cursor: "pointer", margin: "0em 0em 5px 0em" }} onClick={() => toggleSave(w)} />
+                        )}
                       </h5>
                     </div>
                     <div className="card-body">
-                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>🌡 Temp:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {w.temperature}°C</p>
-                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>💨 Wind: </span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{w.windSpeed} km/h</p>
-                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>⏰ Time:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {w.time}</p>
-                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>🏙 Capital: </span> &nbsp; &nbsp; &nbsp; &nbsp;{w.capital}</p>
-                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>👨‍👩‍👧‍👦 Population:</span> &nbsp; {w.population}</p>
-                      <p style={{ display: "flex"}}><span style={{justifyItems: "flext-start", fontWeight: "bold"}}>📍 Lat:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  {w.latitude}, Lng: {w.longitude}</p>
+                      <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>🌡 Temp:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {w.temperature}°C</p>
+                      <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>💨 Wind: </span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{w.windSpeed} km/h</p>
+                      <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>⏰ Time:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {w.time}</p>
+                      <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>🏙 Capital: </span> &nbsp; &nbsp; &nbsp; &nbsp;{w.capital}</p>
+                      <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>👨‍👩‍👧‍👦 Population:</span> &nbsp; {w.population}</p>
+                      <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>📍 Lat:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  {w.latitude}, Lng: {w.longitude}</p>
                     </div>
                   </div>
                 </div>

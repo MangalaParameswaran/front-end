@@ -10,7 +10,7 @@ const WeatherPage = lazy(() => import('./pages/WeatherPage'));
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
-    !!sessionStorage.getItem('authToken')
+    !!sessionStorage.getItem('accessToken')
   );
 
   return (

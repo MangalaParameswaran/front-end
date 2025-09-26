@@ -28,13 +28,13 @@ const LoginPage = ({ setIsAuthenticated }: any) => {
                 password: values.password
             }
             const res = await login(data);
-            setAuth(res.data.token, res.data.userId, res.data.plan_price);
+            setAuth(res.data.accessToken, res.data.refreshToken, res.data.userData);
             setIsAuthenticated(true);
             navigate('/');
             toast.success('Login successfully');
         } catch (error) {
             toast.error("Invalid Credentials");
-            console.log('---error---', error);
+            console.log('---error--', error);
         }
     }
 

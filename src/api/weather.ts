@@ -4,8 +4,8 @@ import { deleteWeather, createWeather } from "../interfaces/weather";
 // Get weather
 export const getweather = async (country: string) => {
   try {
-    const res = await api.get(`/country/${country}`);
-    return res.data;
+    const { data } = await api.get(`/country/${country}`);
+    return data;
   } catch (err) {
     console.error(err);
     throw new Error("Country Not Found");
@@ -13,10 +13,10 @@ export const getweather = async (country: string) => {
 };
 
 // Save weather
-export const saveWeather = async (data: createWeather) => {
+export const saveWeather = async (datas: createWeather) => {
   try {
-    const res = await api.post(`/country/save/user/countries`, { ...data });
-    return res.data;
+    const {data} = await api.post(`/country/save/user/countries`, { ...datas });
+    return data;
   } catch (err) {
     console.error(err);
     throw new Error("Something went wrong");
@@ -26,8 +26,8 @@ export const saveWeather = async (data: createWeather) => {
 // Get saved weather
 export const getSavedWeather = async (userId: string) => {
   try {
-    const res = await api.get(`/country/user/countries/${userId}`);
-    return res.data;
+    const {data} = await api.get(`/country/user/countries/${userId}`);
+    return data;
   } catch (err) {
     console.error(err);
     throw new Error("Something went wrong");

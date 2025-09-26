@@ -1,16 +1,19 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import { register } from '../api/auth';
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import { createUser } from '../interfaces/user'
+import { FaRegRegistered } from "react-icons/fa";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [plan, setPlan] = useState("monthly");
   const navigate = useNavigate();
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const validationSchema = Yup.object().shape({
     name: Yup.string()
@@ -28,14 +31,19 @@ const RegisterPage = () => {
   });
 
   const handleSubmit = async (values: any) => {
-    const data = {
-      name: values.name,
-      email: values.email,
-      password: values.password,
-      subscription: true,
-      plan_price: plan === "monthly" ? 2 : 18,
-    }
     try {
+      let data: createUser = {
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        subscription: values.plan ? true : false,
+        plan_price: (values.plan === "monthly") ? 2 : ((values.plan === "yearly") ? 18 : 0),
+      }
+      if (values.image) {
+        data['image'] = values.image;
+      }
+      //  console.log('data----------', data, data.image);
+
       const res = await register(data);
       toast.success('Registered Successfully');
       navigate('/login');
@@ -45,19 +53,68 @@ const RegisterPage = () => {
     }
   }
 
+  // handle image upload and convert to Base64
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, setFieldValue: any) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFieldValue('image', reader.result); // store Base64 string in Formik
+        setPreviewImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
   return (
-    <div className='d-flex justify-content-center align-items-center vh-100' style={{ background: 'linear-gradient(135deg, #6fb1fc, #4364f7)' }}>
-      <div className="card p-4 shadow-lg h-auto" style={{ maxWidth: '500px', width: '100%' }}>
-        <h2 className='text-center'>Register</h2>
+    <div className='d-flex justify-content-center align-items-center' style={{
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #6fb1fc, #4364f7)",
+      overflowY: "auto",
+      padding: "10px"
+    }}
+    >
+      <div className="card p-3 shadow-lg h-auto" style={{ maxWidth: '500px', width: '100%' }}>
+        <h2 className='text-center'><FaRegRegistered />egister</h2>
         <hr />
 
         <Formik
-          initialValues={{ name: '', email: '', password: '', confirm: '' }}
+          initialValues={{ name: '', email: '', password: '', confirm: '', plan: '', image: '' }}
           validationSchema={validationSchema}
           onSubmit={handleSubmit}
         >
-          {({ errors, touched, isValid, dirty }) => (
+          {({ errors, touched, isValid, dirty, values, setFieldValue }) => (
             <Form className="mt-3">
+
+              {/* New Image Upload Field */}
+              {previewImage && (
+                <div
+                  className="mb-2 d-flex flex-column align-items-center"
+                  style={{ width: '100%', textAlign: 'center' }}
+                >
+                  <div style={{ width: '100px', height: '100px', position: 'relative' }} >
+                    <img
+                      src={previewImage}
+                      alt="Preview"
+                      style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '50%' }}
+                    />
+                    {/* Cancel button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewImage(null); // remove preview
+                        setFieldValue('image', ''); // remove from Formik
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = ''; // reset file input
+                        }
+                      }}
+                      style={{ position: 'absolute', top: '-10px', right: '-10px', background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '12px', lineHeight: '18px', padding: 0, }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="form-floating mb-3">
                 <Field
@@ -145,8 +202,8 @@ const RegisterPage = () => {
                     className="form-check-input"
                     id="subscription-monthly"
                     type="radio"
-                    checked={plan === "monthly"}
-                    onChange={() => setPlan("monthly")}
+                    checked={values.plan === "monthly"}
+                    onChange={() => setFieldValue("plan", "monthly")}
                   />
                   <label className="form-check-label" htmlFor="subscription-monthly">
                     $2 / month <i>(Save up to 2 weather)</i>
@@ -158,8 +215,8 @@ const RegisterPage = () => {
                     className="form-check-input"
                     id="subscription-yearly"
                     type="radio"
-                    checked={plan === "yearly"}
-                    onChange={() => setPlan("yearly")}
+                    checked={values.plan === "yearly"}
+                    onChange={() => setFieldValue("plan", "yearly")}
                   />
                   <label className="form-check-label" htmlFor="subscription-yearly">
                     $18 / year <i>(Unlimited weather)</i>
@@ -167,7 +224,22 @@ const RegisterPage = () => {
                 </div>
               </div>
 
-              <button className="btn btn-primary w-100 my-4" type="submit" disabled={!(dirty && isValid)}  >Register</button>
+              {/* New Image Upload Field */}
+              <div className="">
+                <label htmlFor="image" className="form-label fw-semibold">Profile Image</label>
+                <input
+                  id="image"
+                  type="file"
+                  accept="image/*"
+                  className="form-control"
+                  ref={fileInputRef}
+                  onChange={(e) => handleImageChange(e, setFieldValue)}
+                />
+              </div>
+
+              <div className='d-flex flex-column align-items-center' style={{ cursor: "pointer" }}>
+                <button className="btn btn-primary w-75 my-4" type="submit" disabled={!(dirty && isValid)}  ><b>Save</b></button>
+              </div>
             </Form>
           )}
         </Formik>

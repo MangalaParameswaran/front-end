@@ -10,7 +10,8 @@ export interface createWeather {
     longitude: number,
     flags: Flag,
     capital: string,
-    population: Number
+    population: Number,
+    windSpeed: number
 }
 
 export interface getUserWeather extends createWeather {

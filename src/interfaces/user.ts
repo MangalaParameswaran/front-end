@@ -4,6 +4,7 @@ export interface createUser {
     password: string,
     subscription: boolean,
     plan_price: number;
+    image?: string, 
 }
 
 export interface loginUser {
