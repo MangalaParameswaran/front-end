@@ -80,7 +80,7 @@ const WeatherPage = ({ setIsAuthenticated }: any) => {
       if (weather.isSaved) {
         const data: deleteWeather = { userId, countryId: weather.id };
         const result = await deleteSavedWeather(data);
-        if (result.success) {
+        if (result.statusCode == 200) {
           setWeatherData((prev) =>
             prev.map((w) => {
               return w.name == weather.name ? { ...w, isSaved: false } : w;
