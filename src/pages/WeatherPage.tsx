@@ -80,7 +80,7 @@ const WeatherPage = ({ setIsAuthenticated }: any) => {
       if (weather.isSaved) {
         const data: deleteWeather = { userId, countryId: weather.id };
         const result = await deleteSavedWeather(data);
-        if (result.success) {
+        if (result.statusCode == 200) {
           setWeatherData((prev) =>
             prev.map((w) => {
               return w.name == weather.name ? { ...w, isSaved: false } : w;
@@ -163,7 +163,8 @@ const WeatherPage = ({ setIsAuthenticated }: any) => {
                       <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>⏰ Time:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {w.time}</p>
                       <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>🏙 Capital: </span> &nbsp; &nbsp; &nbsp; &nbsp;{w.capital}</p>
                       <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>👨‍👩‍👧‍👦 Population:</span> &nbsp; {w.population}</p>
-                      <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>📍 Lat:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  {w.latitude}, Lng: {w.longitude}</p>
+                      <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>📍 Lat:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  {w.latitude}</p>
+                      <p style={{ display: "flex" }}><span style={{ justifyItems: "flext-start", fontWeight: "bold" }}>📍 Lng:</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  {w.longitude}</p>
                     </div>
                   </div>
                 </div>

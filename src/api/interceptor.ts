@@ -25,7 +25,7 @@ api.interceptors.response.use(
         const originalRequest = error.config;
         if (error.status == 401 && error?.response?.data['refresh']) {
             const refreshToken = sessionStorage.getItem("refreshToken");
-            const { data } = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
+            const { data } = await axios.post(`${API_URL}/auth/refresh`, { refreshToken: refreshToken });
 
             sessionStorage.setItem("accessToken", data.accessToken);
             sessionStorage.setItem("refreshToken", data.refreshToken);
